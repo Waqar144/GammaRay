@@ -81,6 +81,7 @@ enum BuildInMessageType {
     ModelSortRequest,
     ModelSyncBarrier,
     SelectionModelStateRequest,
+    ModelCreationDeclartionLocationRequest,
 
     // server -> client
     ModelRowColumnCountReply,
@@ -96,6 +97,7 @@ enum BuildInMessageType {
     ModelColumnsRemoved,
     ModelReset,
     ModelLayoutChanged,
+    ModelCreationDeclartionLocationReply,
 
     // server <-> client
     SelectionModelSelect,

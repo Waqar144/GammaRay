@@ -33,6 +33,7 @@
 #include <common/message.h>
 #include <common/modelevent.h>
 #include <common/sourcelocation.h>
+#include <common/objectmodel.h>
 
 #include <compat/qasconst.h>
 
@@ -259,6 +260,16 @@ void RemoteModelServer::newRequest(const GammaRay::Message &msg)
         sendMessage(reply);
         break;
     }
+
+    case Protocol::ModelCreationDeclartionLocationRequest:
+        Protocol::ModelIndex idx;
+        msg >> idx;
+        auto d = m_model->data(Protocol::toQModelIndex(m_model, idx), ObjectModel::DeclarationLocationRole);
+        auto c = m_model->data(Protocol::toQModelIndex(m_model, idx), ObjectModel::CreationLocationRole);
+        Message msg(m_myAddress, Protocol::ModelCreationDeclartionLocationReply);
+        msg << d << c;
+        sendMessage(msg);
+        break;
     }
 }
 
