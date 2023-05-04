@@ -217,6 +217,57 @@ void Endpoint::invokeObject(const QString &objectName, const char *method,
     send(msg);
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+static bool (*invokeMethodImplStolen)(QObject *object, const char *member, Qt::ConnectionType type,
+                                      qsizetype parameterCount, const void *const *parameters, const char *const *names,
+                                      const QtPrivate::QMetaTypeInterface *const *metaTypes);
+
+namespace {
+struct Dummy
+{
+};
+}
+
+template<>
+QtPrivate::Invoke::IfNotOldStyleArgs<QObject *, Dummy> QMetaObject::newInstance(Dummy &&) const
+{
+    invokeMethodImplStolen = &QMetaObject::invokeMethodImpl;
+    return nullptr;
+}
+
+static auto invoke(QObject *obj, const char *member,
+                   QGenericArgument val0,
+                   QGenericArgument val1, QGenericArgument val2, QGenericArgument val3,
+                   QGenericArgument val4, QGenericArgument val5, QGenericArgument val6,
+                   QGenericArgument val7, QGenericArgument val8, QGenericArgument val9)
+{
+    if (!obj || !member)
+        return false;
+
+    QGenericReturnArgument ret;
+    const char *typeNames[] = { ret.name(), val0.name(), val1.name(), val2.name(),
+                                val3.name(), val4.name(), val5.name(), val6.name(),
+                                val7.name(), val8.name(), val9.name() };
+    const void *parameters[] = { ret.data(), val0.data(), val1.data(), val2.data(),
+                                 val3.data(), val4.data(), val5.data(), val6.data(),
+                                 val7.data(), val8.data(), val9.data() };
+
+#define MIFACE(arg) QMetaType::fromName(arg.name()).iface()
+    const QtPrivate::QMetaTypeInterface *mifaces[] = {
+        MIFACE(ret), MIFACE(val0), MIFACE(val1), MIFACE(val2),
+        MIFACE(val3), MIFACE(val4), MIFACE(val5), MIFACE(val6),
+        MIFACE(val7), MIFACE(val8), MIFACE(val9)
+    };
+#undef MIFACE
+    int paramCount;
+    for (paramCount = 1; paramCount < 10 + 1; ++paramCount) {
+        if (qstrlen(typeNames[paramCount]) <= 0)
+            break;
+    }
+    return invokeMethodImplStolen(obj, member, Qt::AutoConnection, paramCount, parameters, typeNames, mifaces);
+}
+#endif
+
 void Endpoint::invokeObjectLocal(QObject *object, const char *method,
                                  const QVariantList &args)
 {
@@ -228,8 +279,16 @@ void Endpoint::invokeObjectLocal(QObject *object, const char *method,
         a[i] = QGenericArgument(m[i]);
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    QMetaObject().newInstance(Dummy());
+    Q_ASSERT(invokeMethodImplStolen);
+
+    invoke(object, method, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8],
+           a[9]);
+#else
     QMetaObject::invokeMethod(object, method, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8],
                               a[9]);
+#endif
 }
 
 void Endpoint::addObjectNameAddressMapping(const QString &objectName,
