@@ -23,11 +23,9 @@
 #include <QTimer>
 #include <QWindow>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <private/qeventpoint_p.h>
 #include <private/qevent_p.h>
 #include <private/qpointingdevice_p.h>
-#endif
 
 using namespace GammaRay;
 
@@ -186,12 +184,7 @@ void RemoteViewServer::sendTouchEvent(const QString &deviceName, int deviceSyste
 
     QTouchEvent event(QEvent::Type(type), m_touchDevice.get(), Qt::KeyboardModifiers(modifiers), touchPoints);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 9, 0))
     QMutableTouchEvent::setTarget(&event, m_eventReceiver);
-#else
-    auto *mut = QMutableTouchEvent::from(&event);
-    mut->setTarget(m_eventReceiver);
-#endif
 
     QCoreApplication::sendEvent(m_eventReceiver, &event);
 }
